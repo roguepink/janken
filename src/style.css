@@ -1,0 +1,151 @@
+:root {
+  --ink: #1b1430;
+  --gold: #ffc400;
+  --red: #f0402f;
+  --blue: #2f7ff0;
+  --pink: #ff4d6d;
+  --panel: #fffaf0;
+  --font: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Meiryo", "Noto Sans JP", "Noto Sans CJK JP", system-ui, sans-serif;
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; height: 100%; overflow: hidden; background: #140c2a; color: var(--ink);
+  font-family: var(--font); font-weight: 800;
+  touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent; overscroll-behavior: none;
+}
+canvas#game { position: fixed; top: 0; left: 0; display: block; touch-action: none; }
+#safe { position: fixed; visibility: hidden; pointer-events: none; padding-top: var(--safe-t); padding-bottom: var(--safe-b); }
+.hidden { display: none !important; }
+body.touch .pc-only { display: none; }
+button { font-family: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+
+/* ---------- 試合中のボタン ---------- */
+#hudBtns { position: fixed; top: calc(10px + var(--safe-t)); right: calc(10px + var(--safe-r)); display: flex; gap: 8px; z-index: 5; }
+.icon-btn { width: 46px; height: 46px; border-radius: 50%; border: 3px solid var(--ink); background: rgba(40, 28, 80, 0.85); padding: 7px; box-shadow: 0 3px 0 var(--ink); }
+.icon-btn svg { width: 100%; height: 100%; display: block; }
+.icon-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+
+/* ---------- 画面の上に のせる パネル ---------- */
+.overlay {
+  position: fixed; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center;
+  padding: calc(12px + var(--safe-t)) calc(12px + var(--safe-r)) calc(12px + var(--safe-b)) calc(12px + var(--safe-l));
+  touch-action: pan-y;
+}
+#result, #pause, #howto { background: rgba(10, 6, 24, 0.55); }
+.panel {
+  background: var(--panel); border: 5px solid var(--ink); border-radius: 28px; box-shadow: 0 8px 0 var(--ink), 0 18px 40px rgba(0, 0, 0, 0.5);
+  width: min(560px, 100%); max-height: 100%; overflow-y: auto; padding: 20px 20px 22px; text-align: center;
+  -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y;
+}
+.panel h2 { margin: 4px 0 14px; font-size: 30px; font-weight: 900; }
+.small-panel { width: min(400px, 100%); display: flex; flex-direction: column; gap: 12px; }
+
+.big-btn {
+  display: block; width: 100%; min-height: 72px; font-size: 30px; font-weight: 900; color: #fff;
+  background: linear-gradient(#ff7a4d, #f0402f 60%, #c62a1e); border: 5px solid var(--ink); border-radius: 22px;
+  box-shadow: 0 6px 0 var(--ink); text-shadow: 0 3px 0 rgba(0, 0, 0, 0.35); letter-spacing: 0.04em;
+}
+.big-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--ink); }
+.big-btn:disabled { filter: grayscale(0.9) brightness(0.8); }
+.sub-btn {
+  display: block; width: 100%; min-height: 56px; font-size: 22px; font-weight: 900; color: var(--ink);
+  background: #fff; border: 4px solid var(--ink); border-radius: 18px; box-shadow: 0 4px 0 var(--ink);
+}
+.sub-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+.red { color: var(--red); } .blue { color: var(--blue); } .gold { color: #e29a00; }
+
+/* ---------- タイトル ---------- */
+#title { flex-direction: column; }
+.title-wrap { width: min(560px, 100%); text-align: center; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.logo { margin: 0; line-height: 1.02; font-weight: 900; transform: rotate(-4deg); }
+.logo span {
+  display: block; font-size: clamp(52px, 15vw, 92px); letter-spacing: 0.02em;
+  -webkit-text-stroke: 10px var(--ink); paint-order: stroke fill;
+  text-shadow: 0 8px 0 var(--ink), 0 14px 24px rgba(0, 0, 0, 0.6);
+  animation: bob 1.6s ease-in-out infinite;
+}
+.logo .l1 { color: #ff5a4a; } .logo .l2 { color: #4fb6ff; animation-delay: 0.15s; }
+.logo .l3 { color: #ffd21f; font-size: clamp(36px, 10.4vw, 72px); white-space: nowrap; animation-delay: 0.3s; }
+@keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+.catch { margin: 4px 0; color: #fff; font-size: clamp(16px, 4.3vw, 22px); line-height: 1.55; word-break: keep-all; overflow-wrap: normal; text-shadow: 0 2px 0 var(--ink), 0 0 10px rgba(0, 0, 0, 0.8); }
+.catch .red { color: #ff8a7a; } .catch .blue { color: #8ccbff; }
+.title-btns { width: min(400px, 100%); display: flex; flex-direction: column; gap: 12px; }
+.title-btns .big-btn { min-height: 84px; font-size: 38px; animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+.title-progress { color: #ffe680; font-size: 18px; text-shadow: 0 2px 0 var(--ink); min-height: 1em; }
+
+/* ---------- じゅんび ---------- */
+.setup-panel { width: min(640px, 100%); height: 100%; max-height: 900px; display: flex; flex-direction: column; padding: 14px 16px 16px; overflow: hidden; }
+.setup-head { display: flex; align-items: center; gap: 10px; }
+.back-btn { border: 3px solid var(--ink); background: #fff; border-radius: 14px; font-size: 18px; font-weight: 900; padding: 8px 12px; box-shadow: 0 3px 0 var(--ink); }
+.steps { flex: 1; display: flex; justify-content: center; gap: 8px; }
+.steps i { width: 16px; height: 16px; border-radius: 50%; border: 3px solid var(--ink); background: #ddd; display: block; }
+.steps i.on { background: var(--gold); transform: scale(1.25); }
+.steps i.done { background: #7ed37a; }
+#stepTitle { font-size: clamp(24px, 6.6vw, 32px); margin: 10px 0 12px; word-break: keep-all; }
+.step-body { display: grid; gap: 12px; flex: 1 1 auto; min-height: 0; overflow-y: auto; align-content: start; padding: 4px 6px 10px; margin: 0 -6px; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y; }
+.step-body.cols2 { grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: center; }
+.choice {
+  position: relative; display: flex; align-items: center; gap: 12px; text-align: left; width: 100%;
+  background: #fff; border: 4px solid var(--ink); border-radius: 20px; padding: 10px 14px; box-shadow: 0 5px 0 var(--ink); color: var(--ink);
+}
+.choice.sel { background: #fff3c4; border-color: #e29a00; box-shadow: 0 5px 0 #a86f00, 0 0 0 4px #ffd21f; }
+.choice:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--ink); }
+.choice canvas { flex: none; width: clamp(68px, 20vw, 92px); height: clamp(68px, 20vw, 92px); border-radius: 14px; background: #2a2340; }
+.choice .c-main { flex: 1; min-width: 0; }
+.choice .c-name { font-size: clamp(19px, 5.4vw, 26px); font-weight: 900; line-height: 1.15; word-break: keep-all; overflow-wrap: anywhere; }
+.choice .c-desc { font-size: 16px; color: #5a4f6e; margin-top: 4px; overflow-wrap: anywhere; line-height: 1.35; }
+.choice .c-bars { display: grid; grid-template-columns: auto 1fr; gap: 3px 8px; align-items: center; margin-top: 6px; font-size: 15px; }
+.bar5 { display: flex; gap: 3px; }
+.bar5 b { flex: 1; height: 12px; border-radius: 4px; border: 2px solid var(--ink); background: #e8e4ee; }
+.bar5.spd b.on { background: #3fd0ff; }
+.bar5.pow b.on { background: #ff5a4a; }
+.bar5.def b.on { background: #7a8cff; }
+.diff-choice { justify-content: center; text-align: center; flex-direction: column; gap: 2px; padding: 16px; }
+.diff-choice .c-main { width: 100%; text-align: center; }
+.diff-choice .c-name { font-size: 32px; }
+.diff-choice.easy .c-name { color: #2aa84a; } .diff-choice.normal .c-name { color: #e29a00; } .diff-choice.hard .c-name { color: #e0262f; }
+.gender-choice { flex-direction: column; text-align: center; padding: 14px; }
+.gender-choice .c-main { width: 100%; text-align: center; }
+.gender-choice canvas { width: 100%; max-width: 160px; height: auto; aspect-ratio: 1; }
+.gender-choice .c-name { font-size: 32px; }
+.stage-choice { padding: 8px 12px; }
+.stage-choice canvas { width: 72px; height: 72px; }
+.stage-choice .c-name { font-size: 21px; }
+.stage-choice .c-sub { font-size: 15px; color: #7a6f8e; }
+.stage-choice .lv { color: #ff4d6d; font-size: 15px; letter-spacing: 1px; }
+.stage-choice.locked { background: #d8d4e0; filter: grayscale(1); opacity: 0.7; }
+.stage-choice .badge { position: absolute; right: 10px; top: 8px; background: #2aa84a; color: #fff; border: 3px solid var(--ink); border-radius: 10px; font-size: 14px; padding: 1px 7px; }
+.setup-foot { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; flex: none; }
+.summary { font-size: 15px; color: #6a5f7e; overflow-wrap: anywhere; }
+
+/* ---------- けっか ---------- */
+.result-panel { width: min(520px, 100%); }
+.result-title { font-size: clamp(36px, 10vw, 52px); font-weight: 900; -webkit-text-stroke: 7px var(--ink); paint-order: stroke fill; line-height: 1.15; margin: 4px 0; }
+.result-title.win { color: #ffd21f; } .result-title.lose { color: #7ab0ff; } .result-title.champ { color: #ffd21f; }
+.rank { font-size: 48px; letter-spacing: 6px; color: #ffc400; -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; min-height: 1em; }
+.rank .off { color: #d8d4e0; }
+.res-msg { font-size: 18px; margin: 6px 0 10px; line-height: 1.5; color: #4a3f5e; overflow-wrap: anywhere; }
+.stats { display: grid; grid-template-columns: auto 1fr; gap: 5px 12px; text-align: left; font-size: clamp(15px, 4.2vw, 19px); margin: 0 0 12px; padding: 10px 14px; background: #f1ecdf; border: 3px solid var(--ink); border-radius: 16px; }
+.stats dt { color: #5a4f6e; white-space: nowrap; } .stats dd { margin: 0; text-align: right; font-weight: 900; }
+.res-btns { display: flex; flex-direction: column; gap: 10px; }
+
+/* ---------- あそびかた ---------- */
+.howto { text-align: left; font-size: 19px; line-height: 1.55; padding-left: 1.4em; margin: 0 0 12px; }
+.howto li { margin-bottom: 10px; }
+.howto small { font-size: 15px; color: #6a5f7e; }
+.howto-tips { text-align: left; font-size: 16px; line-height: 1.5; background: #f1ecdf; border: 3px solid var(--ink); border-radius: 16px; padding: 4px 14px; margin-bottom: 14px; }
+.howto-tips p { margin: 8px 0; overflow-wrap: anywhere; }
+
+@media (max-height: 640px) {
+  .choice canvas { width: 64px; height: 64px; }
+  .gender-choice canvas { width: 100px; height: 100px; }
+  .choice .c-name { font-size: 22px; }
+  .big-btn { min-height: 60px; font-size: 26px; }
+}
+@media (min-width: 600px) { .step-body.stages { grid-template-columns: 1fr 1fr; } }
