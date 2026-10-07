@@ -1,4 +1,6 @@
+/* 夜のリング会場で固定した 1つの見た目(ダーク) */
 :root {
+  color-scheme: dark;
   --ink: #1b1430;
   --gold: #ffc400;
   --red: #f0402f;
