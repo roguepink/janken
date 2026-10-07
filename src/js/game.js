@@ -194,7 +194,7 @@ const Game = (() => {
         sayLine('hurt');
       } else {
         v.oppSquash = 0.05 + w.pierce * 0.2; v.oppSquashV = 0; v.oppArmorWob = 0.3; setExpr('guard', 0.8);
-        FX.sparks(hx, hy - 30, 16, '#fff6b0'); FX.ring(hx, hy - 20, '#9fe8ff', 30, 230, 0.3, 14);
+        FX.shield(hx, hy + 10, false, 0.7); FX.sparks(hx, hy - 30, 16, '#fff6b0'); FX.ring(hx, hy - 20, '#9fe8ff', 30, 230, 0.3, 14);
         FX.shake(5 + w.power * 0.25 * (heavy ? 1.6 : 1));
         FX.popup(heavy ? 'ズシン!' : 'ガキッ!', hx + 130, hy + 60, { size: 80, fill: ['#e6f4ff', '#7cc8ff'], rot: -0.15, life: 0.8 });
         FX.popup('-' + dmg, hx - 170, hy + 40, { size: 84, fill: ['#ffffff', '#ffb36b'], life: 0.95, rise: 70 });
@@ -221,12 +221,14 @@ const Game = (() => {
         const tight = kind === 'tight';
         if (tight) M.stats.tight++;
         v.youSquash = 0.04 + w.pierce * 0.18; v.youSquashV = 0; v.youArmorWob = 0.35;
-        FX.sparks(hx, hy - 40, 26, '#fff6b0'); FX.ring(hx, hy - 30, '#7cd4ff', 40, 360, 0.4, 26); FX.ring(hx, hy - 30, '#ffffff', 20, 200, 0.25, 12);
+        FX.shield(hx, hy - 10, tight); FX.sparks(hx, hy - 40, 26, '#fff6b0'); FX.ring(hx, hy - 30, '#7cd4ff', 40, 360, 0.4, 26); FX.ring(hx, hy - 30, '#ffffff', 20, 200, 0.25, 12);
         FX.guardBlue(0.7); FX.shake(5 + w.power * 0.15); FX.flash(0.15, '#9fe8ff');
         FX.popup(tight ? 'ギリギリ ガード!!' : 'ガード!', hx, hy - 230, { size: tight ? 84 : 100, fill: ['#ffffff', '#4fc3ff'], outer: tight ? '#ffe14d' : null, life: 1.1, rise: 40 });
         FX.popup('-' + dmg, hx + 190, hy - 40, { size: 72, fill: ['#ffffff', '#b8d6ff'], life: 0.9, rise: 70 });
-        G.hitStop = 0.05;
+        G.hitStop = 0.06;
+        if (tight) G.slow = 0.35;
         Sound.sfx.guard(ar.id); if (tight) Sound.sfx.tight();
+        Sound.sfx.crowd(M.st.crowd * 0.5 + 0.1, 0.9);
         setExpr('panic', 0.9);
       }
     }

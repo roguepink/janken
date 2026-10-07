@@ -136,6 +136,8 @@ button { font-family: inherit; cursor: pointer; -webkit-tap-highlight-color: tra
 
 /* ---------- けっか ---------- */
 .result-panel { width: min(520px, 100%); }
+.res-art { display: block; width: 240px; height: 150px; margin: -4px auto 0; }
+@media (max-height: 700px) { .res-art { width: 176px; height: 110px; } }
 .result-title { font-size: clamp(36px, 10vw, 52px); font-weight: 900; -webkit-text-stroke: 7px var(--ink); paint-order: stroke fill; line-height: 1.15; margin: 4px 0; }
 .result-title.win { color: #ffd21f; } .result-title.lose { color: #7ab0ff; } .result-title.champ { color: #ffd21f; }
 .rank { font-size: 48px; letter-spacing: 6px; color: #ffc400; -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; min-height: 1em; }
@@ -159,6 +161,17 @@ button { font-family: inherit; cursor: pointer; -webkit-tap-highlight-color: tra
   .big-btn { min-height: 60px; font-size: 26px; }
 }
 @media (min-width: 600px) { .step-body.stages { grid-template-columns: 1fr 1fr; } }
+@media (max-height: 820px) {
+  .result-panel { padding: 12px 16px 14px; }
+  .res-art { width: 160px; height: 100px; }
+  .result-title { font-size: 36px; }
+  .rank { font-size: 34px; }
+  .res-msg { font-size: 15px; margin: 2px 0 6px; }
+  .stats { font-size: 15px; gap: 2px 12px; padding: 8px 12px; margin-bottom: 10px; }
+  .res-btns { gap: 8px; }
+  .res-btns .big-btn { min-height: 58px; font-size: 26px; }
+  .res-btns .sub-btn { min-height: 46px; font-size: 18px; }
+}
 </style>
 </head>
 <body>
@@ -207,6 +220,7 @@ button { font-family: inherit; cursor: pointer; -webkit-tap-highlight-color: tra
 <!-- けっか -->
 <div id="result" class="overlay hidden">
   <div class="panel result-panel">
+    <canvas id="resArt" class="res-art"></canvas>
     <div class="result-title" id="resTitle"></div>
     <div class="rank" id="resRank"></div>
     <div class="res-msg" id="resMsg"></div>
@@ -1501,7 +1515,7 @@ const Chars = (() => {
     if (gender === 'f') { ctx.beginPath(); ctx.ellipse(0, -36, 28, 18, 0, 0, Math.PI * 2); fs(ctx, P.tie, 5); }
     if (o.armor) {
       const k = o.armorK == null ? 1 : o.armorK;
-      ctx.save(); ctx.translate(0, -(1 - k) * 260); ctx.rotate((1 - k) * 0.6);
+      ctx.save(); ctx.translate(0, -(1 - k) * 260); ctx.rotate((1 - k) * 0.6 + (o.armorWobble || 0));
       Art.armor(ctx, o.armor, 'back');
       ctx.restore();
     } else tankobu(ctx, o.tankobu || 0, -10);
@@ -1784,6 +1798,7 @@ const FX = (() => {
   const pops = [];
   const rings = [];
   const lines = [];
+  const shields = [];
   const S = { shake: 0, sx: 0, sy: 0, flash: 0, flashCol: '#fff', red: 0, blue: 0, zoom: 0, zx: 0, zy: 0 };
   const rnd = Math.random;
 
@@ -1826,6 +1841,8 @@ const FX = (() => {
   }
   function ring(x, y, col, r0, r1, life, w) { rings.push({ x, y, col: col || '#fff', r0: r0 || 20, r1: r1 || 260, life: life || 0.35, t: 0, w: w || 18 }); }
   function speedLines(x, y, col, life) { lines.push({ x, y, col: col || '#fff', life: life || 0.3, t: 0, seed: rnd() * 100 }); }
+  // ガードできた時の 大きな たて(六角形)
+  function shield(x, y, gold, size) { shields.push({ x, y, t: 0, life: 0.55, gold, size: size || 1 }); }
   function shake(a) { S.shake = Math.max(S.shake, a); }
   function flash(a, col) { S.flash = Math.max(S.flash, a); S.flashCol = col || '#fff'; }
   function hurtRed(a) { S.red = Math.max(S.red, a); }
@@ -1844,6 +1861,7 @@ const FX = (() => {
     for (let i = pops.length - 1; i >= 0; i--) { const p = pops[i]; p.t += dt; if (p.t >= p.life + p.delay) pops.splice(i, 1); }
     for (let i = rings.length - 1; i >= 0; i--) { const r = rings[i]; r.t += dt; if (r.t >= r.life) rings.splice(i, 1); }
     for (let i = lines.length - 1; i >= 0; i--) { const r = lines[i]; r.t += dt; if (r.t >= r.life) lines.splice(i, 1); }
+    for (let i = shields.length - 1; i >= 0; i--) { const r = shields[i]; r.t += dt; if (r.t >= r.life) shields.splice(i, 1); }
     S.shake = Math.max(0, S.shake - dt * 60);
     const a = S.shake;
     S.sx = (rnd() - 0.5) * a * 2; S.sy = (rnd() - 0.5) * a * 2;
@@ -1868,6 +1886,19 @@ const FX = (() => {
         ctx.lineTo(l.x + Math.cos(a - w) * r1, l.y + Math.sin(a - w) * r1);
         ctx.closePath(); ctx.fill();
       }
+      ctx.restore();
+    }
+    for (const sh of shields) {
+      const k = sh.t / sh.life;
+      const sc = lerp(0.6, 1.25, easeOutBack(Math.min(1, k * 2.2)));
+      ctx.save(); ctx.translate(sh.x, sh.y); ctx.scale(sc * sh.size, sc * sh.size); ctx.globalAlpha = k < 0.6 ? 0.95 : (1 - k) / 0.4 * 0.95;
+      const col = sh.gold ? '255,214,40' : '90,200,255';
+      ctx.beginPath();
+      for (let i = 0; i < 6; i++) { const a = -Math.PI / 2 + (i * Math.PI) / 3; ctx.lineTo(Math.cos(a) * 190, Math.sin(a) * 170); }
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(' + col + ',0.22)'; ctx.fill();
+      ctx.lineWidth = 16; ctx.strokeStyle = 'rgba(' + col + ',0.95)'; ctx.stroke();
+      ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(255,255,255,0.95)'; ctx.stroke();
       ctx.restore();
     }
     for (const r of rings) {
@@ -1909,9 +1940,9 @@ const FX = (() => {
     }
   }
 
-  function clear() { parts.length = 0; pops.length = 0; rings.length = 0; lines.length = 0; S.shake = 0; S.flash = 0; S.red = 0; S.blue = 0; S.zoom = 0; }
+  function clear() { parts.length = 0; pops.length = 0; rings.length = 0; lines.length = 0; shields.length = 0; S.shake = 0; S.flash = 0; S.red = 0; S.blue = 0; S.zoom = 0; }
 
-  return { S, stars, sparks, confetti, drops, dust, popup, ring, speedLines, shake, flash, hurtRed, guardBlue, zoomPunch, update, drawWorld, drawPops, clear, parts, pops };
+  return { S, shield, stars, sparks, confetti, drops, dust, popup, ring, speedLines, shake, flash, hurtRed, guardBlue, zoomPunch, update, drawWorld, drawPops, clear, parts, pops };
 })();
 
 /* ---- js/audio.js ---- */
@@ -1964,7 +1995,7 @@ const Sound = (() => {
   function noise(dur, vol, freq, type, delay, q, dest, attack) {
     if (!ok()) return;
     const t0 = now() + (delay || 0);
-    const s = ctx.createBufferSource(); s.buffer = noiseBuf;
+    const s = ctx.createBufferSource(); s.buffer = noiseBuf; s.loop = true;
     const f = ctx.createBiquadFilter(); f.type = type || 'lowpass'; f.frequency.value = freq || 1200; if (q) f.Q.value = q;
     const g = ctx.createGain();
     if (attack) { g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + attack); }
@@ -2108,12 +2139,21 @@ const Render = (() => {
     o.tableFarY = o.oppHeadY + 232;
     o.callY = o.tableFarY + 108 + ex * 0.12;
     o.handBtnY = o.callY + 168 + ex * 0.14;
-    o.handBtnR = 94;
+    o.handBtnR = 94; o.handGap = 216;
     o.btnW = 252; o.btnH = 226;
     o.btnY = VH - sb - 84 - o.btnH;
-    o.armorBtn = { x: cx - 352, y: o.btnY, w: o.btnW, h: o.btnH };
-    o.weaponBtn = { x: cx + 100, y: o.btnY, w: o.btnW, h: o.btnH };
     o.youHeadY = o.btnY - 10;
+    // 横長の画面(タブレット・PC)では、ボタンを 画面の 左右はしに 大きく おく(両手の親指で押せる)
+    o.wide = VW >= 1420;
+    if (o.wide) {
+      o.btnW = 320; o.btnH = 320; o.btnY = VH - sb - 84 - o.btnH;
+      o.armorBtn = { x: cx - 360 - 30 - o.btnW, y: o.btnY, w: o.btnW, h: o.btnH };
+      o.weaponBtn = { x: cx + 360 + 30, y: o.btnY, w: o.btnW, h: o.btnH };
+      o.handBtnR = 106; o.handGap = 236;
+    } else {
+      o.armorBtn = { x: cx - 352, y: o.btnY, w: o.btnW, h: o.btnH };
+      o.weaponBtn = { x: cx + 100, y: o.btnY, w: o.btnW, h: o.btnH };
+    }
     o.youHpY = VH - sb - 45;
     return o;
   }
@@ -2288,8 +2328,8 @@ const Render = (() => {
     Chars.drawPlayer(ctx, M.you.gender, {
       t, squash: v.youSquash, tankobu: v.youTank,
       armor: k >= 0 ? M.you.armor.id : null, armorK: k >= 0 ? easeOutCubic(k) : 0, swing: v.youSquash,
+      armorWobble: Math.sin(t * 46) * v.youArmorWob * 0.5,
     });
-    if (k >= 1 && v.youArmorWob > 0.01) { /* ゆれは ぼうぐの絵に ふくめない(軽さ優先) */ }
     if (v.youTank > 0.5 && !(k >= 0)) {
       for (let i = 0; i < 3; i++) { const a = t * 4 + (i * Math.PI * 2) / 3; Art.star(ctx, Math.cos(a) * 120, -120 + Math.sin(a) * 24, 16, t * 3, '#ffe14d', 3); }
     }
@@ -2378,7 +2418,7 @@ const Render = (() => {
   }
 
   /* ---------- じゃんけんボタン(まんなか) ---------- */
-  function handBtnPos(i) { return { x: L.cx + (i - 1) * 216, y: L.handBtnY, r: L.handBtnR }; }
+  function handBtnPos(i) { return { x: L.cx + (i - 1) * L.handGap, y: L.handBtnY, r: L.handBtnR }; }
   function drawHandButtons(M, t) {
     const ph = M.phase;
     if (!(ph === 'call' || ph === 'ready' || ph === 'next')) return;
@@ -2443,11 +2483,13 @@ const Render = (() => {
       ctx.save(); ctx.translate(b.w / 2, b.h * 0.38);
       const inUse = kind === 'armor' ? v.youArmorK >= 0 : (v.strike && v.strike.who === 'p');
       if (inUse) ctx.globalAlpha *= 0.3;
-      if (kind === 'armor') Art.armorIcon(ctx, M.you.armor.id, 150);
-      else Art.weaponIcon(ctx, M.you.weapon.id, 150, 0.6);
+      const isz = Math.min(b.w * 0.6, b.h - 84);
+      if (kind === 'armor') Art.armorIcon(ctx, M.you.armor.id, isz);
+      else Art.weaponIcon(ctx, M.you.weapon.id, isz, 0.6);
       ctx.restore();
       rr(ctx, 10, b.h - 74, b.w - 20, 62, 22); ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fill();
       Art.text(ctx, kind === 'armor' ? 'かぶる' : 'たたく', b.w / 2, b.h - 43, 52, '#ffffff', { outline: 10 });
+      if (L.wide) Art.text(ctx, kind === 'armor' ? '← / A' : '→ / D', b.w / 2, b.h + 26, 26, 'rgba(255,255,255,0.75)', { outline: 6, shadow: false });
       ctx.restore();
       if (hint && correct) {
         const ax = cx; const ay = b.y - 56 - Math.abs(Math.sin(t * 9)) * 12;
@@ -2830,7 +2872,7 @@ const Game = (() => {
         sayLine('hurt');
       } else {
         v.oppSquash = 0.05 + w.pierce * 0.2; v.oppSquashV = 0; v.oppArmorWob = 0.3; setExpr('guard', 0.8);
-        FX.sparks(hx, hy - 30, 16, '#fff6b0'); FX.ring(hx, hy - 20, '#9fe8ff', 30, 230, 0.3, 14);
+        FX.shield(hx, hy + 10, false, 0.7); FX.sparks(hx, hy - 30, 16, '#fff6b0'); FX.ring(hx, hy - 20, '#9fe8ff', 30, 230, 0.3, 14);
         FX.shake(5 + w.power * 0.25 * (heavy ? 1.6 : 1));
         FX.popup(heavy ? 'ズシン!' : 'ガキッ!', hx + 130, hy + 60, { size: 80, fill: ['#e6f4ff', '#7cc8ff'], rot: -0.15, life: 0.8 });
         FX.popup('-' + dmg, hx - 170, hy + 40, { size: 84, fill: ['#ffffff', '#ffb36b'], life: 0.95, rise: 70 });
@@ -2857,12 +2899,14 @@ const Game = (() => {
         const tight = kind === 'tight';
         if (tight) M.stats.tight++;
         v.youSquash = 0.04 + w.pierce * 0.18; v.youSquashV = 0; v.youArmorWob = 0.35;
-        FX.sparks(hx, hy - 40, 26, '#fff6b0'); FX.ring(hx, hy - 30, '#7cd4ff', 40, 360, 0.4, 26); FX.ring(hx, hy - 30, '#ffffff', 20, 200, 0.25, 12);
+        FX.shield(hx, hy - 10, tight); FX.sparks(hx, hy - 40, 26, '#fff6b0'); FX.ring(hx, hy - 30, '#7cd4ff', 40, 360, 0.4, 26); FX.ring(hx, hy - 30, '#ffffff', 20, 200, 0.25, 12);
         FX.guardBlue(0.7); FX.shake(5 + w.power * 0.15); FX.flash(0.15, '#9fe8ff');
         FX.popup(tight ? 'ギリギリ ガード!!' : 'ガード!', hx, hy - 230, { size: tight ? 84 : 100, fill: ['#ffffff', '#4fc3ff'], outer: tight ? '#ffe14d' : null, life: 1.1, rise: 40 });
         FX.popup('-' + dmg, hx + 190, hy - 40, { size: 72, fill: ['#ffffff', '#b8d6ff'], life: 0.9, rise: 70 });
-        G.hitStop = 0.05;
+        G.hitStop = 0.06;
+        if (tight) G.slow = 0.35;
         Sound.sfx.guard(ar.id); if (tight) Sound.sfx.tight();
+        Sound.sfx.crowd(M.st.crowd * 0.5 + 0.1, 0.9);
         setExpr('panic', 0.9);
       }
     }
@@ -3225,7 +3269,8 @@ const UI = (() => {
     else msg = hint(st);
     $('resMsg').innerHTML = msg;
     const rows = [
-      ['じゃんけん', st.wins + 'かち ' + st.losses + 'まけ ' + st.aiko + 'あいこ'],
+      ['じゃんけん', st.wins + 'かち / ' + st.losses + 'まけ'],
+      ['あいこ', st.aiko + '回'],
       ['クリーンヒット', st.clean + '回'],
       ['ガード せいこう', st.guards + '回' + (st.tight ? '(ギリギリ ' + st.tight + ')' : '')],
       ['ジャスト', st.just + '回'],
@@ -3234,13 +3279,40 @@ const UI = (() => {
       ['じかん', Math.round(res.time) + 'びょう'],
     ];
     $('resStats').innerHTML = rows.map((r) => '<dt>' + r[0] + '</dt><dd>' + r[1] + '</dd>').join('');
+    drawResultArt(res, champ);
     const main = $('btnResMain');
-    if (champ) main.textContent = 'タイトルへ';
+    $('btnResTitle').classList.toggle('hidden', champ);
+    if (champ) main.textContent = 'もっと あそぶ!';
     else if (res.win) main.textContent = 'つぎの ステージへ!';
     else main.textContent = 'もういちど!';
     if (res.win) Sound.sfx.fanfare(); else Sound.sfx.sad();
     $('hudBtns').classList.add('hidden');
     show('result');
+  }
+  // けっか画面の絵: かち = たおれた相手、まけ = わらう相手、チャンピオン = ベルト
+  function drawResultArt(res, champ) {
+    const cv = $('resArt'); const k = 2; const W = 240; const H = 150;
+    cv.width = W * k; cv.height = H * k;
+    const c = cv.getContext('2d'); c.setTransform(k, 0, 0, k, 0, 0);
+    const g = G.settings.gender;
+    c.save();
+    if (champ) {
+      c.translate(W / 2, 62); c.scale(0.28, 0.28);
+      Chars.drawOpp(c, Chars.HERO[g], { expr: 'grin', t: 0 });
+      c.restore(); c.save();
+      c.translate(W / 2, 118);
+      Art.rr(c, -112, -16, 224, 32, 12); Art.fs(c, '#2a1a1a', 3);
+      for (const s of [-1, 1]) { c.beginPath(); c.ellipse(s * 70, 0, 20, 17, 0, 0, Math.PI * 2); Art.fs(c, '#ffc400', 3); }
+      c.beginPath(); c.ellipse(0, 0, 48, 30, 0, 0, Math.PI * 2); Art.fs(c, Art.linGrad(c, 0, -30, 0, 30, [[0, '#fff3b0'], [0.5, '#ffc400'], [1, '#c98a00']]), 4);
+      Art.star(c, 0, -4, 15, 0, '#ff4d6d', 2.5);
+      Art.text(c, 'CHAMPION', 0, 19, 11, '#fff', { outline: 3, shadow: false });
+    } else {
+      c.translate(W / 2, res.win ? 78 : 70); c.scale(0.4, 0.4);
+      Chars.drawOpp(c, LOOKS[res.stage][g], { expr: res.win ? 'ko' : 'laugh', t: 0.4, tankobu: res.win ? 1 : 0 });
+      c.restore(); c.save();
+      if (res.win) for (let i = 0; i < 3; i++) Art.star(c, W / 2 - 50 + i * 50, 22 + (i % 2) * 8, 10, i, '#ffe14d', 2);
+    }
+    c.restore();
   }
   function hint(st) {
     if (st.timeouts >= 2) return 'かったら すぐに 右の「たたく」を おそう!<br>まよったら、光っている ボタンを おせばOK!';
@@ -3253,7 +3325,7 @@ const UI = (() => {
     Sound.init(); Sound.sfx.tap();
     const r = lastResult;
     if (!r) { showTitle(); return; }
-    if (r.win && r.stage === 9) showTitle();
+    if (r.win && r.stage === 9) showSetup(0);
     else startStage(r.win ? r.stage + 1 : r.stage);
   }
   function resGear() {

@@ -47,7 +47,7 @@ const Sound = (() => {
   function noise(dur, vol, freq, type, delay, q, dest, attack) {
     if (!ok()) return;
     const t0 = now() + (delay || 0);
-    const s = ctx.createBufferSource(); s.buffer = noiseBuf;
+    const s = ctx.createBufferSource(); s.buffer = noiseBuf; s.loop = true;
     const f = ctx.createBiquadFilter(); f.type = type || 'lowpass'; f.frequency.value = freq || 1200; if (q) f.Q.value = q;
     const g = ctx.createGain();
     if (attack) { g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + attack); }

@@ -6,6 +6,7 @@ const FX = (() => {
   const pops = [];
   const rings = [];
   const lines = [];
+  const shields = [];
   const S = { shake: 0, sx: 0, sy: 0, flash: 0, flashCol: '#fff', red: 0, blue: 0, zoom: 0, zx: 0, zy: 0 };
   const rnd = Math.random;
 
@@ -48,6 +49,8 @@ const FX = (() => {
   }
   function ring(x, y, col, r0, r1, life, w) { rings.push({ x, y, col: col || '#fff', r0: r0 || 20, r1: r1 || 260, life: life || 0.35, t: 0, w: w || 18 }); }
   function speedLines(x, y, col, life) { lines.push({ x, y, col: col || '#fff', life: life || 0.3, t: 0, seed: rnd() * 100 }); }
+  // ガードできた時の 大きな たて(六角形)
+  function shield(x, y, gold, size) { shields.push({ x, y, t: 0, life: 0.55, gold, size: size || 1 }); }
   function shake(a) { S.shake = Math.max(S.shake, a); }
   function flash(a, col) { S.flash = Math.max(S.flash, a); S.flashCol = col || '#fff'; }
   function hurtRed(a) { S.red = Math.max(S.red, a); }
@@ -66,6 +69,7 @@ const FX = (() => {
     for (let i = pops.length - 1; i >= 0; i--) { const p = pops[i]; p.t += dt; if (p.t >= p.life + p.delay) pops.splice(i, 1); }
     for (let i = rings.length - 1; i >= 0; i--) { const r = rings[i]; r.t += dt; if (r.t >= r.life) rings.splice(i, 1); }
     for (let i = lines.length - 1; i >= 0; i--) { const r = lines[i]; r.t += dt; if (r.t >= r.life) lines.splice(i, 1); }
+    for (let i = shields.length - 1; i >= 0; i--) { const r = shields[i]; r.t += dt; if (r.t >= r.life) shields.splice(i, 1); }
     S.shake = Math.max(0, S.shake - dt * 60);
     const a = S.shake;
     S.sx = (rnd() - 0.5) * a * 2; S.sy = (rnd() - 0.5) * a * 2;
@@ -90,6 +94,19 @@ const FX = (() => {
         ctx.lineTo(l.x + Math.cos(a - w) * r1, l.y + Math.sin(a - w) * r1);
         ctx.closePath(); ctx.fill();
       }
+      ctx.restore();
+    }
+    for (const sh of shields) {
+      const k = sh.t / sh.life;
+      const sc = lerp(0.6, 1.25, easeOutBack(Math.min(1, k * 2.2)));
+      ctx.save(); ctx.translate(sh.x, sh.y); ctx.scale(sc * sh.size, sc * sh.size); ctx.globalAlpha = k < 0.6 ? 0.95 : (1 - k) / 0.4 * 0.95;
+      const col = sh.gold ? '255,214,40' : '90,200,255';
+      ctx.beginPath();
+      for (let i = 0; i < 6; i++) { const a = -Math.PI / 2 + (i * Math.PI) / 3; ctx.lineTo(Math.cos(a) * 190, Math.sin(a) * 170); }
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(' + col + ',0.22)'; ctx.fill();
+      ctx.lineWidth = 16; ctx.strokeStyle = 'rgba(' + col + ',0.95)'; ctx.stroke();
+      ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(255,255,255,0.95)'; ctx.stroke();
       ctx.restore();
     }
     for (const r of rings) {
@@ -131,7 +148,7 @@ const FX = (() => {
     }
   }
 
-  function clear() { parts.length = 0; pops.length = 0; rings.length = 0; lines.length = 0; S.shake = 0; S.flash = 0; S.red = 0; S.blue = 0; S.zoom = 0; }
+  function clear() { parts.length = 0; pops.length = 0; rings.length = 0; lines.length = 0; shields.length = 0; S.shake = 0; S.flash = 0; S.red = 0; S.blue = 0; S.zoom = 0; }
 
-  return { S, stars, sparks, confetti, drops, dust, popup, ring, speedLines, shake, flash, hurtRed, guardBlue, zoomPunch, update, drawWorld, drawPops, clear, parts, pops };
+  return { S, shield, stars, sparks, confetti, drops, dust, popup, ring, speedLines, shake, flash, hurtRed, guardBlue, zoomPunch, update, drawWorld, drawPops, clear, parts, pops };
 })();

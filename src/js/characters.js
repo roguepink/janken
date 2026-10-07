@@ -685,7 +685,7 @@ const Chars = (() => {
     if (gender === 'f') { ctx.beginPath(); ctx.ellipse(0, -36, 28, 18, 0, 0, Math.PI * 2); fs(ctx, P.tie, 5); }
     if (o.armor) {
       const k = o.armorK == null ? 1 : o.armorK;
-      ctx.save(); ctx.translate(0, -(1 - k) * 260); ctx.rotate((1 - k) * 0.6);
+      ctx.save(); ctx.translate(0, -(1 - k) * 260); ctx.rotate((1 - k) * 0.6 + (o.armorWobble || 0));
       Art.armor(ctx, o.armor, 'back');
       ctx.restore();
     } else tankobu(ctx, o.tankobu || 0, -10);

@@ -126,6 +126,8 @@ button { font-family: inherit; cursor: pointer; -webkit-tap-highlight-color: tra
 
 /* ---------- けっか ---------- */
 .result-panel { width: min(520px, 100%); }
+.res-art { display: block; width: 240px; height: 150px; margin: -4px auto 0; }
+@media (max-height: 700px) { .res-art { width: 176px; height: 110px; } }
 .result-title { font-size: clamp(36px, 10vw, 52px); font-weight: 900; -webkit-text-stroke: 7px var(--ink); paint-order: stroke fill; line-height: 1.15; margin: 4px 0; }
 .result-title.win { color: #ffd21f; } .result-title.lose { color: #7ab0ff; } .result-title.champ { color: #ffd21f; }
 .rank { font-size: 48px; letter-spacing: 6px; color: #ffc400; -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; min-height: 1em; }
@@ -149,3 +151,14 @@ button { font-family: inherit; cursor: pointer; -webkit-tap-highlight-color: tra
   .big-btn { min-height: 60px; font-size: 26px; }
 }
 @media (min-width: 600px) { .step-body.stages { grid-template-columns: 1fr 1fr; } }
+@media (max-height: 820px) {
+  .result-panel { padding: 12px 16px 14px; }
+  .res-art { width: 160px; height: 100px; }
+  .result-title { font-size: 36px; }
+  .rank { font-size: 34px; }
+  .res-msg { font-size: 15px; margin: 2px 0 6px; }
+  .stats { font-size: 15px; gap: 2px 12px; padding: 8px 12px; margin-bottom: 10px; }
+  .res-btns { gap: 8px; }
+  .res-btns .big-btn { min-height: 58px; font-size: 26px; }
+  .res-btns .sub-btn { min-height: 46px; font-size: 18px; }
+}

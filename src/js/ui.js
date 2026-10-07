@@ -188,7 +188,8 @@ const UI = (() => {
     else msg = hint(st);
     $('resMsg').innerHTML = msg;
     const rows = [
-      ['じゃんけん', st.wins + 'かち ' + st.losses + 'まけ ' + st.aiko + 'あいこ'],
+      ['じゃんけん', st.wins + 'かち / ' + st.losses + 'まけ'],
+      ['あいこ', st.aiko + '回'],
       ['クリーンヒット', st.clean + '回'],
       ['ガード せいこう', st.guards + '回' + (st.tight ? '(ギリギリ ' + st.tight + ')' : '')],
       ['ジャスト', st.just + '回'],
@@ -197,13 +198,40 @@ const UI = (() => {
       ['じかん', Math.round(res.time) + 'びょう'],
     ];
     $('resStats').innerHTML = rows.map((r) => '<dt>' + r[0] + '</dt><dd>' + r[1] + '</dd>').join('');
+    drawResultArt(res, champ);
     const main = $('btnResMain');
-    if (champ) main.textContent = 'タイトルへ';
+    $('btnResTitle').classList.toggle('hidden', champ);
+    if (champ) main.textContent = 'もっと あそぶ!';
     else if (res.win) main.textContent = 'つぎの ステージへ!';
     else main.textContent = 'もういちど!';
     if (res.win) Sound.sfx.fanfare(); else Sound.sfx.sad();
     $('hudBtns').classList.add('hidden');
     show('result');
+  }
+  // けっか画面の絵: かち = たおれた相手、まけ = わらう相手、チャンピオン = ベルト
+  function drawResultArt(res, champ) {
+    const cv = $('resArt'); const k = 2; const W = 240; const H = 150;
+    cv.width = W * k; cv.height = H * k;
+    const c = cv.getContext('2d'); c.setTransform(k, 0, 0, k, 0, 0);
+    const g = G.settings.gender;
+    c.save();
+    if (champ) {
+      c.translate(W / 2, 62); c.scale(0.28, 0.28);
+      Chars.drawOpp(c, Chars.HERO[g], { expr: 'grin', t: 0 });
+      c.restore(); c.save();
+      c.translate(W / 2, 118);
+      Art.rr(c, -112, -16, 224, 32, 12); Art.fs(c, '#2a1a1a', 3);
+      for (const s of [-1, 1]) { c.beginPath(); c.ellipse(s * 70, 0, 20, 17, 0, 0, Math.PI * 2); Art.fs(c, '#ffc400', 3); }
+      c.beginPath(); c.ellipse(0, 0, 48, 30, 0, 0, Math.PI * 2); Art.fs(c, Art.linGrad(c, 0, -30, 0, 30, [[0, '#fff3b0'], [0.5, '#ffc400'], [1, '#c98a00']]), 4);
+      Art.star(c, 0, -4, 15, 0, '#ff4d6d', 2.5);
+      Art.text(c, 'CHAMPION', 0, 19, 11, '#fff', { outline: 3, shadow: false });
+    } else {
+      c.translate(W / 2, res.win ? 78 : 70); c.scale(0.4, 0.4);
+      Chars.drawOpp(c, LOOKS[res.stage][g], { expr: res.win ? 'ko' : 'laugh', t: 0.4, tankobu: res.win ? 1 : 0 });
+      c.restore(); c.save();
+      if (res.win) for (let i = 0; i < 3; i++) Art.star(c, W / 2 - 50 + i * 50, 22 + (i % 2) * 8, 10, i, '#ffe14d', 2);
+    }
+    c.restore();
   }
   function hint(st) {
     if (st.timeouts >= 2) return 'かったら すぐに 右の「たたく」を おそう!<br>まよったら、光っている ボタンを おせばOK!';
@@ -216,7 +244,7 @@ const UI = (() => {
     Sound.init(); Sound.sfx.tap();
     const r = lastResult;
     if (!r) { showTitle(); return; }
-    if (r.win && r.stage === 9) showTitle();
+    if (r.win && r.stage === 9) showSetup(0);
     else startStage(r.win ? r.stage + 1 : r.stage);
   }
   function resGear() {

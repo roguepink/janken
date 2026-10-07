@@ -29,12 +29,21 @@ const Render = (() => {
     o.tableFarY = o.oppHeadY + 232;
     o.callY = o.tableFarY + 108 + ex * 0.12;
     o.handBtnY = o.callY + 168 + ex * 0.14;
-    o.handBtnR = 94;
+    o.handBtnR = 94; o.handGap = 216;
     o.btnW = 252; o.btnH = 226;
     o.btnY = VH - sb - 84 - o.btnH;
-    o.armorBtn = { x: cx - 352, y: o.btnY, w: o.btnW, h: o.btnH };
-    o.weaponBtn = { x: cx + 100, y: o.btnY, w: o.btnW, h: o.btnH };
     o.youHeadY = o.btnY - 10;
+    // 横長の画面(タブレット・PC)では、ボタンを 画面の 左右はしに 大きく おく(両手の親指で押せる)
+    o.wide = VW >= 1420;
+    if (o.wide) {
+      o.btnW = 320; o.btnH = 320; o.btnY = VH - sb - 84 - o.btnH;
+      o.armorBtn = { x: cx - 360 - 30 - o.btnW, y: o.btnY, w: o.btnW, h: o.btnH };
+      o.weaponBtn = { x: cx + 360 + 30, y: o.btnY, w: o.btnW, h: o.btnH };
+      o.handBtnR = 106; o.handGap = 236;
+    } else {
+      o.armorBtn = { x: cx - 352, y: o.btnY, w: o.btnW, h: o.btnH };
+      o.weaponBtn = { x: cx + 100, y: o.btnY, w: o.btnW, h: o.btnH };
+    }
     o.youHpY = VH - sb - 45;
     return o;
   }
@@ -209,8 +218,8 @@ const Render = (() => {
     Chars.drawPlayer(ctx, M.you.gender, {
       t, squash: v.youSquash, tankobu: v.youTank,
       armor: k >= 0 ? M.you.armor.id : null, armorK: k >= 0 ? easeOutCubic(k) : 0, swing: v.youSquash,
+      armorWobble: Math.sin(t * 46) * v.youArmorWob * 0.5,
     });
-    if (k >= 1 && v.youArmorWob > 0.01) { /* ゆれは ぼうぐの絵に ふくめない(軽さ優先) */ }
     if (v.youTank > 0.5 && !(k >= 0)) {
       for (let i = 0; i < 3; i++) { const a = t * 4 + (i * Math.PI * 2) / 3; Art.star(ctx, Math.cos(a) * 120, -120 + Math.sin(a) * 24, 16, t * 3, '#ffe14d', 3); }
     }
@@ -299,7 +308,7 @@ const Render = (() => {
   }
 
   /* ---------- じゃんけんボタン(まんなか) ---------- */
-  function handBtnPos(i) { return { x: L.cx + (i - 1) * 216, y: L.handBtnY, r: L.handBtnR }; }
+  function handBtnPos(i) { return { x: L.cx + (i - 1) * L.handGap, y: L.handBtnY, r: L.handBtnR }; }
   function drawHandButtons(M, t) {
     const ph = M.phase;
     if (!(ph === 'call' || ph === 'ready' || ph === 'next')) return;
@@ -364,11 +373,13 @@ const Render = (() => {
       ctx.save(); ctx.translate(b.w / 2, b.h * 0.38);
       const inUse = kind === 'armor' ? v.youArmorK >= 0 : (v.strike && v.strike.who === 'p');
       if (inUse) ctx.globalAlpha *= 0.3;
-      if (kind === 'armor') Art.armorIcon(ctx, M.you.armor.id, 150);
-      else Art.weaponIcon(ctx, M.you.weapon.id, 150, 0.6);
+      const isz = Math.min(b.w * 0.6, b.h - 84);
+      if (kind === 'armor') Art.armorIcon(ctx, M.you.armor.id, isz);
+      else Art.weaponIcon(ctx, M.you.weapon.id, isz, 0.6);
       ctx.restore();
       rr(ctx, 10, b.h - 74, b.w - 20, 62, 22); ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fill();
       Art.text(ctx, kind === 'armor' ? 'かぶる' : 'たたく', b.w / 2, b.h - 43, 52, '#ffffff', { outline: 10 });
+      if (L.wide) Art.text(ctx, kind === 'armor' ? '← / A' : '→ / D', b.w / 2, b.h + 26, 26, 'rgba(255,255,255,0.75)', { outline: 6, shadow: false });
       ctx.restore();
       if (hint && correct) {
         const ax = cx; const ay = b.y - 56 - Math.abs(Math.sin(t * 9)) * 12;
