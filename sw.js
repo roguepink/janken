@@ -1,7 +1,8 @@
 'use strict';
 /* オフラインでも遊べるようにする(ホーム画面に入れたあと、電波がなくても起動する)。
    ゲームは index.html 1枚で完結しているので、それと アイコン類だけを覚えておく。
-   ゲームを直して公開したら、下の VERSION を 1つ上げる(古い覚えが 捨てられて、新しい版に入れ替わる)。 */
+   ゲームを直しただけなら VERSION は そのままでいい(開くたびに、まずネットで最新を取りにいくので)。
+   FILES(覚えるファイル)を変えたときだけ VERSION を 1つ上げる(古い覚えを 一斉に捨てる)。 */
 const VERSION = 'janken-v1';
 const FILES = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'maskable-512.png', 'apple-touch-icon.png'];
 
