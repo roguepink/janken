@@ -3,7 +3,8 @@
    プリインストールの Chromium(Playwright)で index.html を開いて確かめる:
    1) スマホ画面: メニューを タップで進み、本物のタップで じゃんけん → たたく / かぶる → KO → けっか画面
    2) 全10ステージ × 男女を ボットで 早送りで通しプレイ(例外が出ない・決着がつく・描画も こわれない)
-   3) PC: キーボードだけで 1ラウンド */
+   3) PC: キーボードだけで 1ラウンド
+   4) こわれた保存データ・ボタンのはしのタップ・K.O. 中のポーズ */
 const path = require('path');
 const { chromium } = require('playwright');
 
@@ -141,6 +142,33 @@ async function waitFor(p, cond, ms) {
     await waitFor(p, () => window.__janken.G.M.phase !== 'action', 3000);
     check('PC: 1(グー)と →(たたく)で 遊べる', (await p.evaluate(() => window.__janken.G.M.hp.c)) < hp0);
     check('PC: エラーなし', errs.length === 0, errs.join(' | '));
+    await p.close();
+  }
+
+  /* ---------- 4) こわれた保存・ボタンのはし・K.O. 中のポーズ ---------- */
+  {
+    const p = await b.newPage({ viewport: { width: 390, height: 844 } });
+    const errs = []; p.on('pageerror', (e) => errs.push(e.message));
+    await p.addInitScript(() => { try { localStorage.setItem('tataite_save', JSON.stringify({ settings: { diff: 'constructor', weapon: 99 }, stars: { normal: { 0: -1, 3: 'x' }, hard: 5 } })); } catch (e) { /* 無視 */ } });
+    await p.goto(URL); await sleep(300);
+    const r = await p.evaluate(() => {
+      const J = window.__janken; const out = {};
+      out.diff = J.G.settings.diff; out.weapon = J.G.settings.weapon;
+      J.UI.showSetup(4);
+      out.cards = document.querySelectorAll('#stepBody .stage-choice').length;
+      J.G.manual = true; J.UI.startStage(0);
+      const M = J.G.M; M.phase = 'call';
+      const b1 = J.Render.handBtnPos(1);
+      out.left = J.Render.hitTest(b1.x - (b1.r + 4), b1.y).value;
+      out.right = J.Render.hitTest(b1.x + (b1.r + 4), b1.y).value;
+      M.phase = 'ko'; J.UI.setPaused(true); out.koPaused = J.G.paused;
+      J.UI.showTitle();
+      return out;
+    });
+    check('こわれた保存データでも メニューが出る', r.diff === 'normal' && r.weapon === 4 && r.cards === 10, JSON.stringify(r));
+    check('じゃんけんボタンの はしを押しても となりに ならない', r.left === 1 && r.right === 1);
+    check('K.O. の演出中は ポーズしない(勝ちが 記録される)', r.koPaused === false);
+    check('エラーなし', errs.length === 0, errs.join(' | '));
     await p.close();
   }
 

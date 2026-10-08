@@ -34,11 +34,16 @@ const UI = (() => {
   }
   function sanitize() {
     const s = G.settings;
-    if (!CONFIG.diffs[s.diff]) s.diff = 'normal';
+    if (!Object.prototype.hasOwnProperty.call(CONFIG.diffs, s.diff)) s.diff = 'normal';
     if (s.gender !== 'm' && s.gender !== 'f') s.gender = 'm';
     s.weapon = clamp(s.weapon | 0, 0, CONFIG.weapons.length - 1);
     s.armor = clamp(s.armor | 0, 0, CONFIG.armors.length - 1);
     for (const k of Object.keys(save.cleared)) save.cleared[k] = clamp(save.cleared[k] | 0, 0, 10);
+    for (const k of Object.keys(save.stars)) {
+      const m = save.stars[k] && typeof save.stars[k] === 'object' ? save.stars[k] : {};
+      save.stars[k] = {};
+      for (let i = 0; i < 10; i++) { const v = clamp(m[i] | 0, 0, 3); if (v) save.stars[k][i] = v; }
+    }
   }
   function persist() {
     save.settings = G.settings;
@@ -258,6 +263,8 @@ const UI = (() => {
   /* ---------- ポーズ・音 ---------- */
   function setPaused(p) {
     if (G.state !== 'match') return;
+    // K.O. の演出中は止めない(止めて タイトルへ もどると 勝ちが 記録されないため)
+    if (p && G.M && G.M.phase === 'ko') return;
     G.paused = p;
     if (p) { Sound.suspend(); show('pause'); $('hudBtns').classList.add('hidden'); }
     else { Sound.resume(); show(null); $('hudBtns').classList.remove('hidden'); }
@@ -265,6 +272,7 @@ const UI = (() => {
   function toggleSound() {
     Sound.init();
     Sound.setMuted(!Sound.isMuted());
+    if (G.paused) Sound.suspend(); // ポーズ中は 音を止めたまま
     syncSound();
   }
   function syncSound() {

@@ -12,7 +12,7 @@ const Sound = (() => {
   try { muted = localStorage.getItem('tataite_mute') === '1'; } catch (e) { /* 保存できなくても遊べる */ }
 
   function init() {
-    if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return; }
+    if (ctx) { if (ctx.state !== 'running' && ctx.state !== 'closed') ctx.resume(); return; }
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
     try {
@@ -154,7 +154,8 @@ const Sound = (() => {
     if (master) master.gain.value = m ? 0 : 0.8;
   }
   function suspend() { if (ctx && ctx.state === 'running') ctx.suspend(); }
-  function resume() { if (ctx && ctx.state === 'suspended') ctx.resume(); }
+  // iPhone では 電話などのあと 'interrupted' に なることがある
+  function resume() { if (ctx && ctx.state !== 'running' && ctx.state !== 'closed') ctx.resume(); }
 
   return { init, sfx, startBgm, stopBgm, setMuted, isMuted: () => muted, suspend, resume };
 })();

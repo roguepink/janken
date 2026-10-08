@@ -1962,7 +1962,7 @@ const Sound = (() => {
   try { muted = localStorage.getItem('tataite_mute') === '1'; } catch (e) { /* 保存できなくても遊べる */ }
 
   function init() {
-    if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return; }
+    if (ctx) { if (ctx.state !== 'running' && ctx.state !== 'closed') ctx.resume(); return; }
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
     try {
@@ -2104,7 +2104,8 @@ const Sound = (() => {
     if (master) master.gain.value = m ? 0 : 0.8;
   }
   function suspend() { if (ctx && ctx.state === 'running') ctx.suspend(); }
-  function resume() { if (ctx && ctx.state === 'suspended') ctx.resume(); }
+  // iPhone では 電話などのあと 'interrupted' に なることがある
+  function resume() { if (ctx && ctx.state !== 'running' && ctx.state !== 'closed') ctx.resume(); }
 
   return { init, sfx, startBgm, stopBgm, setMuted, isMuted: () => muted, suspend, resume };
 })();
@@ -2162,6 +2163,7 @@ const Render = (() => {
 
   function resize() {
     const w = window.innerWidth; const h = window.innerHeight;
+    if (!w || !h) return; // 大きさ 0 の間は 前の配置のまま(次の resize で 作り直す)
     dpr = Math.min(window.devicePixelRatio || 1, 2);
     canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
     canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
@@ -2654,11 +2656,14 @@ const Render = (() => {
     const M = G.M;
     if (!M) return { kind: 'any' };
     if (M.phase === 'call') {
+      // いちばん近いボタン(はしを押しても となりに ならない)
+      let best = -1; let bd = Infinity;
       for (let i = 0; i < 3; i++) {
         const b = handBtnPos(i);
-        if (Math.hypot(x - b.x, y - b.y) <= b.r + 26) return { kind: 'hand', value: i };
+        const d = Math.hypot(x - b.x, y - b.y);
+        if (d <= b.r + 26 && d < bd) { bd = d; best = i; }
       }
-      return { kind: 'none' };
+      return best >= 0 ? { kind: 'hand', value: best } : { kind: 'none' };
     }
     if (M.phase === 'action') {
       // 下半分の 左 = かぶる、右 = たたく(大きめに とる)
@@ -3117,11 +3122,16 @@ const UI = (() => {
   }
   function sanitize() {
     const s = G.settings;
-    if (!CONFIG.diffs[s.diff]) s.diff = 'normal';
+    if (!Object.prototype.hasOwnProperty.call(CONFIG.diffs, s.diff)) s.diff = 'normal';
     if (s.gender !== 'm' && s.gender !== 'f') s.gender = 'm';
     s.weapon = clamp(s.weapon | 0, 0, CONFIG.weapons.length - 1);
     s.armor = clamp(s.armor | 0, 0, CONFIG.armors.length - 1);
     for (const k of Object.keys(save.cleared)) save.cleared[k] = clamp(save.cleared[k] | 0, 0, 10);
+    for (const k of Object.keys(save.stars)) {
+      const m = save.stars[k] && typeof save.stars[k] === 'object' ? save.stars[k] : {};
+      save.stars[k] = {};
+      for (let i = 0; i < 10; i++) { const v = clamp(m[i] | 0, 0, 3); if (v) save.stars[k][i] = v; }
+    }
   }
   function persist() {
     save.settings = G.settings;
@@ -3341,6 +3351,8 @@ const UI = (() => {
   /* ---------- ポーズ・音 ---------- */
   function setPaused(p) {
     if (G.state !== 'match') return;
+    // K.O. の演出中は止めない(止めて タイトルへ もどると 勝ちが 記録されないため)
+    if (p && G.M && G.M.phase === 'ko') return;
     G.paused = p;
     if (p) { Sound.suspend(); show('pause'); $('hudBtns').classList.add('hidden'); }
     else { Sound.resume(); show(null); $('hudBtns').classList.remove('hidden'); }
@@ -3348,6 +3360,7 @@ const UI = (() => {
   function toggleSound() {
     Sound.init();
     Sound.setMuted(!Sound.isMuted());
+    if (G.paused) Sound.suspend(); // ポーズ中は 音を止めたまま
     syncSound();
   }
   function syncSound() {

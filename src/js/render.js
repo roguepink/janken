@@ -50,6 +50,7 @@ const Render = (() => {
 
   function resize() {
     const w = window.innerWidth; const h = window.innerHeight;
+    if (!w || !h) return; // 大きさ 0 の間は 前の配置のまま(次の resize で 作り直す)
     dpr = Math.min(window.devicePixelRatio || 1, 2);
     canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
     canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
@@ -542,11 +543,14 @@ const Render = (() => {
     const M = G.M;
     if (!M) return { kind: 'any' };
     if (M.phase === 'call') {
+      // いちばん近いボタン(はしを押しても となりに ならない)
+      let best = -1; let bd = Infinity;
       for (let i = 0; i < 3; i++) {
         const b = handBtnPos(i);
-        if (Math.hypot(x - b.x, y - b.y) <= b.r + 26) return { kind: 'hand', value: i };
+        const d = Math.hypot(x - b.x, y - b.y);
+        if (d <= b.r + 26 && d < bd) { bd = d; best = i; }
       }
-      return { kind: 'none' };
+      return best >= 0 ? { kind: 'hand', value: best } : { kind: 'none' };
     }
     if (M.phase === 'action') {
       // 下半分の 左 = かぶる、右 = たたく(大きめに とる)
