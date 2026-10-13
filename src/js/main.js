@@ -36,7 +36,13 @@
   window.addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(() => Render.resize(), 80); });
   window.addEventListener('orientationchange', () => setTimeout(() => Render.resize(), 200));
   // ほかのアプリに切りかえたら 自動でポーズ(音も止める)
-  document.addEventListener('visibilitychange', () => { if (document.hidden && G.state === 'match' && !G.paused) UI.setPaused(true); });
+  // (K.O. の演出中や メニューでも 音は止める。もどったら ポーズ中でなければ 鳴らしなおす)
+  function away() { if (G.state === 'match' && !G.paused) UI.setPaused(true); Sound.suspend(); }
+  function back() { if (!document.hidden && !(G.state === 'match' && G.paused)) Sound.resume(); }
+  document.addEventListener('visibilitychange', () => { if (document.hidden) away(); else back(); });
+  // もどるボタンや ほかのページへ 行ったとき(ページが 記憶されて あとで もどる場合も)
+  window.addEventListener('pagehide', away);
+  window.addEventListener('pageshow', (e) => { if (e.persisted) back(); });
   window.addEventListener('blur', () => { if (G.state === 'match' && !G.paused && G.M && G.M.phase !== 'intro') UI.setPaused(true); });
 
   Render.init(canvas);
