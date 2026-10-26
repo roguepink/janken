@@ -14,5 +14,13 @@
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
     { "src": "maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
-  ]
+  ],
+  "screenshots": [
+    { "src": "shots/1.jpg", "sizes": "360x780", "type": "image/jpeg", "form_factor": "narrow", "label": "勝ったら ハンマーで たたく!" },
+    { "src": "shots/2.jpg", "sizes": "360x780", "type": "image/jpeg", "form_factor": "narrow", "label": "大魔王に フライパンで ドゴォン!" },
+    { "src": "shots/3.jpg", "sizes": "360x780", "type": "image/jpeg", "form_factor": "narrow", "label": "タイトル画面" },
+    { "src": "shots/4.jpg", "sizes": "360x780", "type": "image/jpeg", "form_factor": "narrow", "label": "武器を えらぶ" },
+    { "src": "shots/5.jpg", "sizes": "360x780", "type": "image/jpeg", "form_factor": "narrow", "label": "ステージ10 ファイナル" }
+  ],
+  "categories": ["games"]
 }
